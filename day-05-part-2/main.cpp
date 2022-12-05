@@ -1,15 +1,28 @@
 #include <iostream>
-#include <stack>
+#include <deque>
+#include <tuple>
+
+template<int len>
+void print_queue(std::array<std::deque<char>, len> &queues) {
+    for (size_t i = 0; i < queues.size(); i++) {
+        std::cout << "Q " << i << ": ";
+        for (auto &c: queues[i]) std::cout << "-" << c;
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+}
 
 int main(int argc, char **argv) {
 
-    std::string input_line;
-    std::stack<char> stacks[9];
+    constexpr int NUM_QUEUES = 9;
 
-    // parse stacks
+    std::string input_line;
+    std::array<std::deque<char>, NUM_QUEUES> queues;
+
+    // parse queues
     while (getline(std::cin, input_line)) {
 
-        // empty line after stacks
+        // empty line after queues
         if (input_line.empty()) {
             break;
         }
@@ -17,57 +30,41 @@ int main(int argc, char **argv) {
         for (size_t i = 0; (i * 4 + 1) < input_line.size(); i++) {
 
             if (input_line[i * 4] == '[') {
-                stacks[i].push(input_line[i * 4 + 1]);
+                queues[i].push_front(input_line[i * 4 + 1]);
             }
 
         }
 
     }
 
-
-    // reverse order within each stack
-    for (auto &i: stacks) {
-        std::stack<char> temp;
-        while (!i.empty()) {
-            temp.push(i.top());
-            i.pop();
-        }
-        i = temp;
-    }
-
+    // print queues
+    print_queue<NUM_QUEUES>(queues);
 
     // parse and compute instructions
     while (getline(std::cin, input_line)) {
 
         // parse instruction
         int count, from, to;
-        sscanf(input_line.c_str(), "move %d from %d to %d", &count, &from, &to);
-
+        int check = sscanf(input_line.c_str(), "move %d from %d to %d", &count, &from, &to);
+        if (check != 3) throw std::runtime_error("invalid instruction");
 
         // adjust indices
-        from--;
-        to--;
+        from--, to--;
 
-
-        std::stack<char> temp;
-        for (int i = 0; i < count; i++) {
-            temp.push(stacks[from].top());
-            stacks[from].pop();
-        }
-
-        while (!temp.empty()) {
-            stacks[to].push(temp.top());
-            temp.pop();
-        }
+        // move
+        auto begin = queues[from].end() - count;
+        queues[to].insert(queues[to].end(), begin, queues[from].end());
+        queues[from].erase(begin, queues[from].end());
 
     }
+
+    // print queues
+    print_queue<NUM_QUEUES>(queues);
 
     std::cout << "Top elements concatenated: ";
-    for (auto &stack: stacks) {
-        std::cout << stack.top();
-    }
+    std::apply([](auto &&... v) { ((std::cout << v.back()), ...); }, queues);
 
-    std::cout << std::endl;
+    std::cout << std::endl; // Solution: HZFZCCWWV
 
     return 0;
 
